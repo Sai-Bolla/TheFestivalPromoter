@@ -128,6 +128,7 @@ def extract_event_time(event):
 
 # Sidebar
 with st.sidebar:
+
     st.header("**🔍 Search Filters**")
     city = st.text_input("City", placeholder="e.g., London, Manchester")
     keyword = st.text_input("Keyword", placeholder="e.g., Taylor Swift, Jay-Z")
