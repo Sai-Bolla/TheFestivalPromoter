@@ -16,59 +16,155 @@ BASE_URL = "https://app.ticketmaster.com/discovery/v2/events.json?"
 st.set_page_config(page_title="Ticketmaster UK Events", page_icon="🏷️", layout="wide")
 
 COLORS = {
-    'primary': '#1A3A8F',      # Dark blue - main headings, primary elements
-    'secondary': '#6B35C8',    # Purple - buttons, highlights
-    'accent': '#00B4C8',       # Teal - accents, hover effects
-    'dark': '#0D1F5C',         # Navy - sidebar, footer, borders
-    'light_purple': '#C8B8F0', # Light purple - backgrounds, cards
-    'background': '#F4F4F6'    # Light gray - page background
+    "primary": "#1A3A8F",  # Dark blue - main headings, primary elements
+    "secondary": "#6B35C8",  # Purple - buttons, highlights
+    "accent": "#00B4C8",  # Teal - accents, hover effects
+    "dark": "#0D1F5C",  # Navy - sidebar, footer, borders
+    "light_purple": "#C8B8F0",  # Light purple - backgrounds, cards
+    "background": "#F4F4F6",  # Light gray - page background
 }
 
-st.markdown(f"""
+st.markdown(
+    """
 <style>
-    .stApp {{
-        background-color: {COLORS['background']};
+    .stApp {{        
+        background-color: #f0faf2;
+    }}
+    
+    # .main .block-container {{
+    #     padding-top: 2rem;
+    #     padding-bottom: 2rem;
+    # }}
+    
+    # h1, h2, h3 {{
+    #     color: {COLORS['primary']} !Important;
+    # }}
+    
+    # h1 {{
+    #     border-bottom: 3px solid {COLORS['secondary']};
+    #     padding-bottom: 0.5rem;
+    # }}
+    
+    # .stButton > button {{
+    #     background: linear-gradient(135deg, {COLORS['primary']}, {COLORS['secondary']}) !important;
+    #     color: white !important;
+    #     font-weight: bold !important;
+    #     border: none !important;
+    #     border-radius: 8px !important;
+    #     padding: 0.6rem 1.2rem !important;
+    #     transition: all 0.3s ease !important;
+    #     box-shadow: 0 2px 8px rgba(26, 58, 143, 0.3);
     }}
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # Title and description
 st.title("🎫 Ticketmaster UK Events")
 st.markdown("Finding a gap in events in the UK")
 
+
+def extract_event_date(event):
+    dates = event.get("dates", {})
+
+    # Standard date
+    start = dates.get("start", {})
+    if start.get("localDate"):
+        return start.get("localDate")
+
+    # Date range
+    if dates.get("start", {}).get("localDate"):
+        return dates["start"]["localDate"]
+
+    # Span
+    if dates.get("span", {}).get("localDate"):
+        return dates["span"]["localDate"]
+
+    # Status
+    if dates.get("status", {}).get("localDate"):
+        return dates["status"]["localDate"]
+
+    # Embedded date
+    if event.get("_embedded", {}).get("dates", {}).get("localDate"):
+        return event["_embedded"]["dates"]["localDate"]
+
+    # Sale dates
+    if dates.get("access", {}).get("localDate"):
+        return dates["access"]["localDate"]
+
+    return "N/A"
+
+
+def extract_event_time(event):
+    dates = event.get("dates", {})
+    start = dates.get("start", {})
+
+    if start.get("localTime"):
+        return start.get("localTime")
+
+    # Check if there's a time in the date field
+    if start.get("localDate") and "T" in start.get("localDate", ""):
+        # If it's a full datetime string, extract the time part
+        try:
+            # Format: "2026-07-15T19:30:00" -> "19:30"
+            time_part = start["localDate"].split("T")[1][:5]
+            return time_part
+        except:
+            pass
+
+    # Check if there's a timezone or other time field
+    if start.get("dateTime"):
+        try:
+            # If there's a dateTime field, extract time
+            time_part = start["dateTime"].split("T")[1][:5]
+            return time_part
+        except:
+            pass
+
+    # missing time
+    return "TBC"
+
+
 # Sidebar
-st.sidebar.header("🔍 Search Filters")
-city = st.sidebar.text_input("City", placeholder="e.g., London, Manchester")
-keyword = st.sidebar.text_input("Keyword", placeholder="e.g., Taylor Swift, Jay-Z")
-classification = st.sidebar.selectbox(
-    "Category",
-    options=["All", "Music", "Sports", "Arts & Theatre", "Family", "Comedy"],
-    index=0,
-)
-
-# Date range
-col1, col2 = st.sidebar.columns(2)
-with col1:
-    start_date = st.date_input(
-        "Start Date", value=None, help="Leave blank for no filter"
+with st.sidebar:
+    st.header("**🔍 Search Filters**")
+    city = st.text_input("City", placeholder="e.g., London, Manchester")
+    keyword = st.text_input("Keyword", placeholder="e.g., Taylor Swift, Jay-Z")
+    classification = st.selectbox(
+        "Category",
+        options=["All", "Music", "Sports", "Arts & Theatre", "Family", "Comedy"],
+        index=0,
     )
-with col2:
-    end_date = st.date_input("End Date", value=None, help="Leave blank for no filter")
 
-# Number of results
-size = st.sidebar.slider(
-    "Number of results per page", min_value=5, max_value=100, value=20, step=5
-)
+    # Date range
+    st.markdown("**📅 Date Range**")
+    col1, col2 = st.columns(2)
+    with col1:
+        start_date = st.date_input(
+            "Start Date", value=None, help="Leave blank for no filter"
+        )
+    with col2:
+        end_date = st.date_input(
+            "End Date", value=None, help="Leave blank for no filter"
+        )
 
-# Search button
-search_button = st.sidebar.button(
-    "🔍 Search Events", type="primary", width='stretch'
-)
+    # Number of results
+    size = st.slider(
+        "Number of results per page", min_value=5, max_value=100, value=20, step=5
+    )
+
+    st.markdown("---")
+
+    show_raw = st.checkbox("Show raw API data (debug)", value=False)
+
+    # Search button
+    search_button = st.button("🔍 Search Events", type="primary", width="stretch")
 
 if search_button:
-    if not TICKET_API_KEY:
-        st.error("❌ Please enter your Ticketmaster API key")
-        st.stop()
+    # if not TICKET_API_KEY:
+    #     st.error("❌ Please enter your Ticketmaster API key")
+    #     st.stop()
     with st.spinner("Fetching events from Ticketmaster..."):
         try:
             params = {
@@ -109,6 +205,10 @@ if search_button:
                 st.stop()
 
             # Display total
+            if show_raw:
+                with st.expander("🔍 Raw API Response (first event)"):
+                    st.json(events[0] if events else {})
+
             total_elements = data.get("page", {}).get("totalElements", len(events))
             st.success(f"✅ Found {total_elements} events (showing {len(events)})")
 
@@ -124,9 +224,8 @@ if search_button:
                 )
 
                 # Date information
-                start_date_time = e.get("dates", {}).get("start", {}).get("start", {})
-                event_date = start_date_time.get("localDate", "N/A")
-                event_time = start_date_time.get("localTime", "N/A")
+                event_date = extract_event_date(e)
+                event_time = extract_event_time(e)
 
                 # Classification (genre)
                 classifications = e.get("classifications", [])
@@ -139,6 +238,12 @@ if search_button:
                 # Get url
                 event_url = e.get("url", "#")
 
+                # Show full date
+                dates = e.get("dates", {})
+                start = dates.get("start", {})
+                date_status = dates.get("status", {})
+                date_span = dates.get("span", {})
+
                 event_data.append(
                     {
                         "ID": e.get("id", "N/A"),
@@ -146,14 +251,27 @@ if search_button:
                         "Venue": venue_name,
                         "City": venue_city,
                         "Date": event_date,
-                        "Time": event_time if event_time != "N/A" else "TBC",
+                        "Time": event_time,
                         "Genre": genre,
                         "Ticket URL": event_url,
+                        # Debugging
+                        "_date_debug": {
+                            "start": start,
+                            "status": date_status,
+                            "span": date_span,
+                        },
                     }
                 )
 
             # Display as DataFrame
             df = pd.DataFrame(event_data)
+
+            # Debug information for dates
+            if show_raw:
+                with st.expander("📊 Date Extraction Debug"):
+                    date_status_counts = df[df["Date"] != "N/A"].shape[0]
+                    st.write(f"Events with dates: {date_status_counts}/{len(df)}")
+                    st.write("Sample dates:", df["Date"].head(10).tolist())
 
             # Show summary
             col1, col2, col3 = st.columns(3)
@@ -169,10 +287,24 @@ if search_button:
             # Display interactive table
             st.subheader("📋 Event List")
 
+            # Display only the visible columns
+            display_columns = [
+                "ID",
+                "Event Name",
+                "Venue",
+                "City",
+                "Date",
+                "Time",
+                "Genre",
+                "Ticket URL",
+            ]
+
+            display_df = df[display_columns]
+
             # Add filters for the table
             st.dataframe(
                 df,
-                width='stretch',
+                width="stretch",
                 hide_index=True,
                 column_config={
                     "ID": st.column_config.TextColumn("Event ID", width="small"),
@@ -215,13 +347,13 @@ if search_button:
                                     st.link_button(
                                         "🎟️ Buy Tickets",
                                         event["Ticket URL"],
-                                        width='stretch',
+                                        width="stretch",
                                     )
                                 else:
                                     st.button(
                                         "🔒 Tickets Unavailable",
                                         disabled=True,
-                                        width='stretch',
+                                        width="stretch",
                                     )
 
             # --- Option to download as CSV ---
@@ -231,7 +363,7 @@ if search_button:
                 data=csv,
                 file_name=f"ticketmaster_events_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 mime="text/csv",
-                width='stretch',
+                width="stretch",
             )
 
         except requests.exceptions.RequestException as e:
