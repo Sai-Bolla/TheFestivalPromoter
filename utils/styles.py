@@ -5,22 +5,22 @@ def apply_sidebar_styles():
     """
     Colour theme
     """
-    
+
     COLOURS = {
-        "primary": "#1A3A8F",      # Deep navy blue — the dominant structural colour
-        "secondary": "#6B35C8",    # Mid purple — the gradient midpoint
-        "accent": "#00B4C8",       # Teal/cyan — the upward arrow highlight
-        "dark": "#0D1F5C",         # Near-black navy — shadows and depth
-        "light_purple": "#C8B8F0", # Pale lavender — for backgrounds or subtle fills
-        "background": "#F4F4F6",   # Off-white — clean background
+        "primary": "#1A3A8F",  # Deep navy blue — the dominant structural colour
+        "secondary": "#6B35C8",  # Mid purple — the gradient midpoint
+        "accent": "#00B4C8",  # Teal/cyan — the upward arrow highlight
+        "dark": "#0D1F5C",  # Near-black navy — shadows and depth
+        "light_purple": "#C8B8F0",  # Pale lavender — for backgrounds or subtle fills
+        "background": "#F4F4F6",  # Off-white — clean background
     }
-    
+
     st.markdown(
         f"""
 <style>
     /* ============ PAGE BACKGROUND ============ */
     .stApp {{
-        background-color: {COLOURS['background']};
+        background-color: {COLOURS['primary']};
     }}
     
     /* ============ MAIN CONTAINER ============ */
@@ -31,7 +31,7 @@ def apply_sidebar_styles():
     
     /* ============ HEADERS ============ */
     h1, h2, h3, h4, h5, h6 {{
-        color: {COLOURS['primary']} !important;
+        color: {COLOURS['secondary']} !important;
     }}
     
     h1 {{
@@ -223,7 +223,7 @@ def apply_sidebar_styles():
     
     .stDataFrame thead tr th {{
         background: linear-gradient(135deg, {COLOURS['primary']}, {COLOURS['secondary']}) !important;
-        color: white !important;
+        color: black !important;
         padding: 0.75rem !important;
     }}
     
@@ -286,7 +286,7 @@ def apply_sidebar_styles():
     /* ============ DOWNLOAD BUTTON ============ */
     .stDownloadButton > button {{
         background: linear-gradient(135deg, {COLOURS['accent']}, {COLOURS['secondary']}) !important;
-        color: white !important;
+        color: black !important;
         border: none !important;
         border-radius: 8px !important;
         font-weight: bold !important;
@@ -379,4 +379,3 @@ def apply_sidebar_styles():
 """,
         unsafe_allow_html=True,
     )
-    

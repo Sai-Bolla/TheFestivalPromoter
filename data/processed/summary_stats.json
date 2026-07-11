@@ -1,0 +1,36 @@
+{
+  "total_events": 270,
+  "unique_venues": 122,
+  "events_by_source": {
+    "Skiddle": 178,
+    "Ticketmaster": 92
+  },
+  "date_range": {
+    "min": "2024-05-25",
+    "max": "2026-09-09"
+  },
+  "top_venues": {
+    "Holy Diver": 14,
+    "Band On The Wall": 13,
+    "Band On The Wall.": 11,
+    "YES Basement": 10,
+    "O2 Ritz Manchester": 7,
+    "Empire Rochdale": 6,
+    "O2 Victoria Warehouse Manchester": 6,
+    "Manchester Academy": 6,
+    "YES Pink Room": 6,
+    "The Abbey": 5
+  },
+  "top_genres": {
+    "N/A": 191,
+    "Rock": 30,
+    "Undefined": 12,
+    "Pop": 4,
+    "Hip-Hop/Rap": 4,
+    "Country": 4,
+    "Soccer": 3,
+    "Dance/Electronic": 3,
+    "Folk": 3,
+    "Comedy": 3
+  }
+}
