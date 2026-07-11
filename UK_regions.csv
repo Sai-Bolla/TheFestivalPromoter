@@ -1,0 +1,21 @@
+region,population,lat,lon,country,city_type
+Greater London,8982000,51.5074,-0.1278,England,Metropolitan
+West Midlands,2944000,52.475,-1.8975,England,Metropolitan
+Greater Manchester,2870000,53.4808,-2.2426,England,Metropolitan
+West Yorkshire,2350000,53.8008,-1.5491,England,Metropolitan
+South Yorkshire,1420000,53.3811,-1.4701,England,Metropolitan
+Merseyside,1425000,53.4106,-2.9779,England,Metropolitan
+Tyne and Wear,1136000,54.9783,-1.6178,England,Metropolitan
+Bristol,465900,51.4545,-2.5879,England,City
+Edinburgh,527620,55.9533,-3.1883,Scotland,City
+Glasgow,635640,55.8642,-4.2518,Scotland,City
+Belfast,345006,54.5973,-5.9301,Northern Ireland,City
+Cardiff,362400,51.4816,-3.1791,Wales,City
+Nottingham,330000,52.9548,-1.1581,England,City
+Sheffield,584853,53.3811,-1.4701,England,City
+Leeds,793139,53.8008,-1.5491,England,City
+Liverpool,498042,53.4084,-2.9916,England,City
+Newcastle,300196,54.9783,-1.6178,England,City
+Brighton,277103,50.8225,-0.1372,England,City
+Oxford,162100,51.7520,-1.2577,England,City
+Cambridge,145700,52.2053,0.1218,England,City
