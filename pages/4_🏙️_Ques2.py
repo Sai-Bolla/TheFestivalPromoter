@@ -3,12 +3,14 @@ import streamlit as st
 from utils.styles import apply_sidebar_styles
 import pandas as pd
 from datetime import datetime
-from collect_data import DataCollector, DataCleaner, run_data_pipeline 
+from collect_data import DataCollector, DataCleaner, run_data_pipeline
 from data_cleaner import AdvancedDataCleaner
+from gap_analyser import EventGapAnalyser, analyse_events_gap
+from external_factors import ExternalFactorsAnalyzer, OpportunityFinder
 import os
 from dotenv import load_dotenv  # ADD THIS
 import folium
-from streamlit_folium import folium_static
+from streamlit_folium import folium_static, st_folium
 import plotly.express as px
 
 # Load environment variables FIRST
@@ -36,11 +38,15 @@ if os.path.exists(SIDEBAR_LOGO):
 # Set page config ONCE
 st.set_page_config(page_title="Process Data", layout="wide")
 
-# Initialise session state
+# Initialise session states
 if "events_df" not in st.session_state:
     st.session_state.events_df = None
 if "quality_df" not in st.session_state:
     st.session_state.quality_df = None
+if "gaps_df" not in st.session_state:  
+    st.session_state.gaps_df = None
+if "gap_analysis_results" not in st.session_state:  
+    st.session_state.gap_analysis_results = None
 
 # Title
 st.title("UK Live Music Data")
@@ -57,7 +63,7 @@ with st.sidebar:
         "SKIDDLE_API_KEY",
         "your_skiddle_api_key_here",
         "",
-        None
+        None,
     ]:
         st.success("✅ Skiddle API Key: Configured")
     else:
@@ -67,7 +73,7 @@ with st.sidebar:
         "TICKET_API_KEY",
         "your_ticketmaster_api_key_here",
         "",
-        None
+        None,
     ]:
         st.success("✅ Ticketmaster API Key: Configured")
     else:
@@ -78,7 +84,7 @@ with st.sidebar:
         "SKIDDLE_API_KEY",
         "your_skiddle_api_key_here",
         "",
-        None
+        None,
     ]:
         st.warning("⚠️ Skiddle key not found. Check your .env file")
 
@@ -102,9 +108,11 @@ with st.sidebar:
 
     col1, col2 = st.columns(2)
     with col1:
-        fetch_button = st.button("Fetch & Clean Data", type="primary", use_container_width=True)  # Changed width
+        fetch_button = st.button(
+            "Fetch & Clean Data", type="primary", width="stretch"
+        )  # Changed width
     with col2:
-        load_button = st.button("Load Latest Data", use_container_width=True)  # Changed width
+        load_button = st.button("Load Latest Data", width="stretch")  # Changed width
 
     st.markdown("---")
     st.header("Data Cleaning Options")
@@ -179,7 +187,7 @@ def fetch_and_clean_data():
         "SKIDDLE_API_KEY",
         "your_skiddle_api_key_here",
         "",
-        None
+        None,
     ]:
         st.error("❌ Skiddle API Key is missing or invalid. Check your .env file")
         return None
@@ -188,7 +196,7 @@ def fetch_and_clean_data():
         "TICKET_API_KEY",
         "your_ticketmaster_api_key_here",
         "",
-        None
+        None,
     ]:
         st.error("❌ Ticketmaster API Key is missing or invalid. Check your .env file")
         return None
@@ -212,7 +220,6 @@ def fetch_and_clean_data():
                 skiddle_key=skiddle_key, ticketmaster_key=ticketmaster_key
             )
 
-            # FIXED: Changed to fetch_skiddle_events and fetch_ticketmaster_events
             skiddle_df = collector.fetch_skiddle_events(
                 lat, lon, radius, event_type, max_events
             )
@@ -263,6 +270,7 @@ def fetch_and_clean_data():
         except Exception as e:
             st.error(f"❌ Error: {str(e)}")
             import traceback
+
             st.error(traceback.format_exc())
             return None
 
@@ -325,17 +333,19 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
         data=csv,
         file_name=f"events_cleaned_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
         mime="text/csv",
-        use_container_width=True,
+        width="stretch",
     )
 
     # Tabs for different views
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
         [
             "🗺️ Map View",
             "📊 Analysis",
             "📈 Density",
             "📋 Data Preview",
             "ℹ️ Quality Report",
+            "📆 Event Gap Analysis",
+            "🔍 Gap Investigation & Opportunity Finder",
         ]
     )
 
@@ -368,7 +378,7 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
                 icon=folium.Icon(color=icon_color, icon="music", prefix="fa"),
             ).add_to(m)
 
-        folium_static(m, width=800, height=500)
+        st_folium(m, width=800, height=500)
 
     with tab2:
         st.subheader("📊 Event Analysis")
@@ -383,7 +393,7 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
                 title="Events by Source",
                 color_discrete_sequence=px.colors.qualitative.Set2,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
         with col2:
             # Top venues
@@ -397,7 +407,7 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
                 color_continuous_scale="Viridis",
             )
             fig.update_layout(showlegend=False, height=400)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
         # Event categories
         if "event_category" in df.columns:
@@ -409,7 +419,7 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
                 title="Events by Category",
                 color_discrete_sequence=px.colors.qualitative.Set3,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
         # Date distribution
         if "date" in df.columns:
@@ -424,7 +434,7 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
                     title="Number of Events by Date",
                     labels={"x": "Date", "y": "Number of Events"},
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
             except:
                 pass
 
@@ -482,13 +492,13 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
                 yaxis_title="Events per 100,000 Population",
                 height=400,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
             # Show data table
             st.subheader("Regional Metrics")
             st.dataframe(
                 region_filtered.sort_values("events_per_100k", ascending=False),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 column_config={
                     "region": "Region",
@@ -533,7 +543,7 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
 
         st.dataframe(
             filtered_df,
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             column_config={
                 "event_name": "Event",
@@ -558,7 +568,7 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
             ):
                 st.dataframe(
                     st.session_state.quality_df[["event_name", "venue_name"]],
-                    use_container_width=True,
+                    width="stretch",
                 )
 
     with tab5:
@@ -579,7 +589,7 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
                     color_continuous_scale="Viridis",
                 )
                 fig.update_layout(showlegend=False)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
             with col2:
                 # Quality by source
@@ -595,7 +605,7 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
                     color_continuous_scale="Viridis",
                 )
                 fig.update_layout(showlegend=False)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
             # Quality breakdown
             st.subheader("Quality Breakdown by Category")
@@ -607,9 +617,409 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
             quality_breakdown.columns = ["Category", "Avg Quality", "Count"]
             st.dataframe(
                 quality_breakdown.sort_values("Avg Quality", ascending=False),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
             )
+
+    with tab6:
+        st.subheader("📆 Event Gap Analysis")
+        st.markdown("*Find periods with no events and analyse potential causes*")
+
+        if "date_parsed" not in df.columns:
+            df["date_parsed"] = pd.to_datetime(df["date"], errors="coerce")
+
+        # Gap analysis
+        col1, col2 = st.columns(2)
+
+        with col1:
+            gap_threshold = st.slider(
+                "Minimum days without events to consider a gap",
+                min_value=1,
+                max_value=14,
+                value=3,
+                help="Events with no events for this many consecutive days are considered gaps",
+            )
+
+        with col2:
+            # Date range
+            if not df["date_parsed"].isna().all():
+                min_date = df["date_parsed"].min().date()
+                max_date = df["date_parsed"].max().date()
+
+                date_range = st.date_input(
+                    "Date range for analysis",
+                    value=(min_date, max_date),
+                    min_value=min_date,
+                    max_value=max_date,
+                )
+
+        # Run gap analysis
+        if st.button("Find Event Gaps"):
+            with st.spinner("Analysing event gaps..."):
+                # Filter by date range
+                if date_range and len(date_range) == 2:
+                    start_date, end_date = date_range
+                    filtered_df = df[
+                        (df["date_parsed"] >= pd.to_datetime(start_date))
+                        & (df["date_parsed"] <= pd.to_datetime(end_date))
+                    ]
+                else:
+                    filtered_df = df
+
+                # Run analysis
+                analyser = EventGapAnalyser(filtered_df)
+                gaps = analyser.find_gaps(gap_threshold)
+                summary = analyser.get_gap_summary(gap_threshold)
+                causes = analyser.analyze_gap_causes(gaps)
+
+                if gaps.empty:
+                    st.success("No significant gaps found! Events are well distributed")
+                else:
+                    # Display summary
+                    st.subheader("📊 Gap Summary")
+
+                    col1, col2, col3, col4 = st.columns(4)
+
+                    with col1:
+                        st.metric("Total Gaps", summary["total_gaps"])
+                    with col2:
+                        st.metric("Total Gap Days", summary["total_gap_days"])
+                    with col3:
+                        st.metric(
+                            "Average Gap", f"{summary['average_gap_days']:.1f} days"
+                        )
+                    with col4:
+                        st.metric("Largest Gap", f"{summary['max_gap_days']} days")
+
+                    # Display largest gap
+                    if summary["largest_gap"]:
+                        largest = summary["largest_gap"]
+                        st.warning(
+                            f"⚠️ **Largest Gap**: {largest['gap_days']} days from {largest['gap_start'].strftime('%Y-%m-%d')} to {largest['gap_end'].strftime('%Y-%m-%d')}"
+                        )
+
+                    # Gap timeline
+                    st.subheader("📈 Gap Timeline")
+
+                    # Create timeline visualization
+                    import plotly.graph_objects as go
+
+                    fig = go.Figure()
+
+                    # Add events as scatter
+                    events_df = filtered_df[filtered_df["date_parsed"].notna()]
+                    fig.add_trace(
+                        go.Scatter(
+                            x=events_df["date_parsed"],
+                            y=[1] * len(events_df),
+                            mode="markers",
+                            name="Events",
+                            marker=dict(color="blue", size=8, symbol="circle"),
+                            text=(
+                                events_df["event_name"]
+                                if "event_name" in events_df.columns
+                                else None
+                            ),
+                            hoverinfo="text+x",
+                        )
+                    )
+
+                    # Add gaps as rectangles
+                    for _, gap in gaps.iterrows():
+                        fig.add_vrect(
+                            x0=gap["gap_start"],
+                            x1=gap["gap_end"],
+                            fillcolor="red",
+                            opacity=0.3,
+                            layer="below",
+                            line_width=0,
+                        )
+
+                    fig.update_layout(
+                        title="Events and Gaps Timeline",
+                        xaxis_title="Date",
+                        yaxis_title="",
+                        yaxis=dict(showticklabels=False, range=[0.5, 1.5]),
+                        height=300,
+                        showlegend=False,
+                    )
+                    st.plotly_chart(fig, width="stretch")
+
+                    # Show gaps table
+                    st.subheader("📋 Detailed Gap List")
+                    st.dataframe(
+                        gaps[
+                            [
+                                "gap_start",
+                                "gap_end",
+                                "gap_days",
+                                "day_of_week_start",
+                                "month",
+                            ]
+                        ].sort_values("gap_days", ascending=False),
+                        width="stretch",
+                        hide_index=True,
+                        column_config={
+                            "gap_start": st.column_config.DateColumn("Start Date"),
+                            "gap_end": st.column_config.DateColumn("End Date"),
+                            "gap_days": st.column_config.NumberColumn(
+                                "Days", format="%d"
+                            ),
+                            "day_of_week_start": "Start Day",
+                            "month": "Month",
+                        },
+                    )
+
+                    # Gap causes analysis
+                    st.subheader("🔍 Possible Causes of Gaps")
+
+                    if causes is None:
+                        causes = {}
+
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        # Check if seasonal_pattern exists before accessing
+                        if causes.get("seasonal_pattern"):
+                            st.write("**Seasonal Patterns**")
+                            if causes["seasonal_pattern"].get("most_gap_prone_month"):
+                                st.write(
+                                    f"Most gap-prone month: {causes['seasonal_pattern']['most_gap_prone_month']}"
+                                )
+
+                            if causes["seasonal_pattern"].get("gaps_by_month"):
+                                month_df = pd.DataFrame(
+                                    list(
+                                        causes["seasonal_pattern"][
+                                            "gaps_by_month"
+                                        ].items()
+                                    ),
+                                    columns=["Month", "Gap Count"],
+                                )
+                                st.dataframe(month_df, hide_index=True)
+                        else:
+                            st.info("No seasonal pattern data available")
+
+                    with col2:
+                        # Check if day_pattern exists before accessing
+                        if causes.get("day_pattern"):
+                            st.write("**Day of Week Patterns**")
+                            if causes["day_pattern"].get("most_gap_prone_day"):
+                                st.write(
+                                    f"Most gap-prone day: {causes['day_pattern']['most_gap_prone_day']}"
+                                )
+
+                            if causes["day_pattern"].get("gaps_by_day"):
+                                day_df = pd.DataFrame(
+                                    list(causes["day_pattern"]["gaps_by_day"].items()),
+                                    columns=["Day", "Gap Count"],
+                                )
+                                st.dataframe(day_df, hide_index=True)
+                        else:
+                            st.info("No day pattern data available")
+
+                    # Holiday analysis - check if exists
+                    if causes.get("holiday_pattern"):
+                        st.write("**Holiday/Seasonal Effects**")
+                        st.write(
+                            f"Gaps during holidays: {causes['holiday_pattern'].get('gaps_during_holidays', 0)}"
+                        )
+                        st.write(
+                            f"Percentage of gaps during holidays: {causes['holiday_pattern'].get('percentage_of_gaps', 0):.1f}%"
+                        )
+                    else:
+                        st.info("No holiday pattern data available")
+
+                    # Download gaps data
+                    csv_gaps = gaps.to_csv(index=False).encode("utf-8")
+                    st.download_button(
+                        label="📥 Download Gap Analysis (CSV)",
+                        data=csv_gaps,
+                        file_name=f"event_gaps_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                        mime="text/csv",
+                    )
+
+    with tab7:  # New tab for gap investigation
+        st.subheader("🔍 Gap Investigation & Opportunity Finder")
+        st.markdown("*Analyze why gaps occur and identify opportunities to fill them*")
+
+        if "date_parsed" not in df.columns:
+            df["date_parsed"] = pd.to_datetime(df["date"], errors="coerce")
+
+        # Select a gap to investigate
+        if st.session_state.gaps_df is not None and not st.session_state.gaps_df.empty:
+            st.markdown("### Select a Gap to Investigate")
+
+            # Let user select a gap
+            gap_options = []
+            for idx, gap in st.session_state.gaps_df.iterrows():
+                gap_label = f"{gap['gap_start'].strftime('%Y-%m-%d')} to {gap['gap_end'].strftime('%Y-%m-%d')} ({gap['gap_days']} days)"
+                gap_options.append((idx, gap_label))
+
+            if gap_options:
+                selected_idx = st.selectbox(
+                    "Choose a gap to investigate",
+                    options=[opt[0] for opt in gap_options],
+                    format_func=lambda x: dict(gap_options)[x],
+                )
+
+                if selected_idx is not None:
+                    selected_gap = st.session_state.gaps_df.loc[selected_idx]
+
+                    # Initialize analyzers
+                    external_analyzer = ExternalFactorsAnalyzer()
+                    opportunity_finder = OpportunityFinder()
+
+                    # Analyze the gap
+                    with st.spinner("Analyzing external factors..."):
+                        # Get gap analysis
+                        gap_analysis = external_analyzer.analyze_gap_causes(
+                            df, selected_gap["gap_start"], selected_gap["gap_end"]
+                        )
+
+                        # Identify opportunities
+                        opportunities = external_analyzer.identify_opportunities(
+                            gap_analysis, df
+                        )
+
+                        # Prioritize opportunities
+                        prioritized = opportunity_finder.prioritize_opportunities(
+                            opportunities
+                        )
+
+                    # Display results
+                    st.markdown("### 📊 Gap Analysis Results")
+
+                    # Gap details
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Gap Duration", f"{selected_gap['gap_days']} days")
+                    with col2:
+                        st.metric("Month", selected_gap["month"])
+                    with col3:
+                        st.metric("Year", selected_gap["year"])
+
+                    # External Factors
+                    st.markdown("### 🌍 External Factors Contributing to the Gap")
+
+                    for factor in gap_analysis["external_factors"]:
+                        with st.expander(
+                            f"**{factor['type']}** - Impact: {factor['impact'].upper()}"
+                        ):
+                            st.write(factor["description"])
+                            if isinstance(factor["details"], dict):
+                                st.json(factor["details"])
+                            elif isinstance(factor["details"], list):
+                                for item in factor["details"]:
+                                    if isinstance(item, dict):
+                                        st.write(f"- {item}")
+                                    else:
+                                        st.write(f"- {item}")
+                            else:
+                                st.write(factor["details"])
+
+                    # Opportunities
+                    st.markdown("### 💡 Identified Opportunities")
+
+                    if prioritized:
+                        # Summary metrics
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            high_priority = len(
+                                [
+                                    o
+                                    for o in prioritized
+                                    if o["priority_level"] == "High"
+                                ]
+                            )
+                            st.metric("High Priority Opportunities", high_priority)
+                        with col2:
+                            medium_priority = len(
+                                [
+                                    o
+                                    for o in prioritized
+                                    if o["priority_level"] == "Medium"
+                                ]
+                            )
+                            st.metric("Medium Priority Opportunities", medium_priority)
+                        with col3:
+                            low_priority = len(
+                                [o for o in prioritized if o["priority_level"] == "Low"]
+                            )
+                            st.metric("Low Priority Opportunities", low_priority)
+
+                        # Display opportunities
+                        for idx, opp in enumerate(prioritized):
+                            with st.expander(
+                                f"{idx+1}. {opp['type']} - Priority: {opp['priority_level']} (Score: {opp['priority_score']}/10)"
+                            ):
+                                st.write(f"**Description**: {opp['description']}")
+                                st.write(
+                                    f"**Target Audience**: {opp['target_audience']}"
+                                )
+                                st.write(
+                                    f"**Potential Venues**: {opp['potential_venues']}"
+                                )
+                                st.write(f"**Suggestion**: {opp['suggestion']}")
+
+                        # Export opportunities
+                        opp_df = pd.DataFrame(prioritized)
+                        csv_opp = opp_df.to_csv(index=False).encode("utf-8")
+                        st.download_button(
+                            label="📥 Download Opportunities (CSV)",
+                            data=csv_opp,
+                            file_name=f"opportunities_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                            mime="text/csv",
+                        )
+                    else:
+                        st.info("No specific opportunities identified for this gap.")
+
+                    # Recommendations
+                    st.markdown("### 🎯 Recommendations")
+
+                    recs = [
+                        "Consider reaching out to local venues to fill the gap",
+                        "Look for promoters who might be available during this period",
+                        "Check if there are any community events that could be organized",
+                        "Consider virtual events as an alternative",
+                        "Partner with local businesses for event sponsorship",
+                    ]
+
+                    # Add specific recommendations based on gap type
+                    if selected_gap["gap_days"] >= 7:
+                        recs.append(
+                            "📅 **Weekly Event Series**: Consider establishing a weekly event series to prevent recurring gaps"
+                        )
+
+                    if selected_gap["month"] in ["1", "2"]:
+                        recs.append(
+                            "❄️ **Winter Events**: January/February gaps can be filled with indoor concerts, comedy nights, or theater productions"
+                        )
+
+                    if selected_gap["month"] in ["7", "8"]:
+                        recs.append(
+                            "🏖️ **Summer Events**: These months are ideal for outdoor events - consider pop-up concerts or mini-festivals"
+                        )
+
+                    for rec in recs:
+                        st.write(f"- {rec}")
+
+                    # Additional research suggestions
+                    st.markdown("### 🔬 Suggested Further Research")
+                    st.info("""
+                    **To understand these gaps better:**
+                    1. Check local venue availability during these periods
+                    2. Contact event promoters about their scheduling challenges
+                    3. Survey potential attendees about what events they would attend
+                    4. Research other cities' event schedules for comparison
+                    5. Look at transportation/travel patterns during these periods
+                    """)
+
+        else:
+            st.info(
+                "No gaps found to investigate. Try adjusting the gap threshold or date range."
+            )
+
 
 else:
     # Initial state with instructions

@@ -1,36 +1,36 @@
 {
-  "total_events": 270,
-  "unique_venues": 122,
+  "total_events": 196,
+  "unique_venues": 148,
   "events_by_source": {
-    "Skiddle": 178,
-    "Ticketmaster": 92
+    "Skiddle": 108,
+    "Ticketmaster": 88
   },
   "date_range": {
-    "min": "2024-05-25",
-    "max": "2026-09-09"
+    "min": "2022-05-02",
+    "max": "2027-07-10"
   },
   "top_venues": {
-    "Holy Diver": 14,
-    "Band On The Wall": 13,
-    "Band On The Wall.": 11,
-    "YES Basement": 10,
-    "O2 Ritz Manchester": 7,
-    "Empire Rochdale": 6,
-    "O2 Victoria Warehouse Manchester": 6,
-    "Manchester Academy": 6,
-    "YES Pink Room": 6,
-    "The Abbey": 5
+    "Boston Manor Park": 6,
+    "Old Royal Naval College Greenwich": 6,
+    "Clapham Common": 6,
+    "Eutopia Warehouse": 4,
+    "LDN EAST": 4,
+    "Finsbury Park": 3,
+    "Studio 338": 3,
+    "Morden Park": 3,
+    "Boxpark Wembley": 3,
+    "Hyde Park": 2
   },
   "top_genres": {
-    "N/A": 191,
-    "Rock": 30,
-    "Undefined": 12,
-    "Pop": 4,
-    "Hip-Hop/Rap": 4,
-    "Country": 4,
-    "Soccer": 3,
-    "Dance/Electronic": 3,
-    "Folk": 3,
-    "Comedy": 3
+    "N/A": 112,
+    "Theatre": 44,
+    "Rock": 8,
+    "Undefined": 8,
+    "Family": 8,
+    "Comedy": 4,
+    "Pop": 2,
+    "R&B": 2,
+    "Miscellaneous": 1,
+    "Soccer": 1
   }
 }
