@@ -339,7 +339,7 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
     )
 
     # Tabs for different views
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
         [
             "🗺️ Map View",
             "📊 Analysis",
@@ -347,7 +347,7 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
             "📋 Data Preview",
             # "ℹ️ Quality Report",
             "📆 Event Gap Analysis",
-            "🔍 Gap Investigation & Opportunity Finder",
+            # "🔍 Gap Investigation & Opportunity Finder",
             "🎪 Festival Opportunity",
         ]
     )
@@ -842,188 +842,188 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
                         mime="text/csv",
                     )
 
-    with tab6:  # New tab for gap investigation
-        st.subheader("🔍 Gap Investigation & Opportunity Finder")
-        st.markdown("*Analyze why gaps occur and identify opportunities to fill them*")
+    # with tab6:  # New tab for gap investigation
+    #     st.subheader("🔍 Gap Investigation & Opportunity Finder")
+    #     st.markdown("*Analyze why gaps occur and identify opportunities to fill them*")
 
-        if "date_parsed" not in df.columns:
-            df["date_parsed"] = pd.to_datetime(df["date"], errors="coerce")
+    #     if "date_parsed" not in df.columns:
+    #         df["date_parsed"] = pd.to_datetime(df["date"], errors="coerce")
 
-        # Select a gap to investigate
-        if st.session_state.gaps_df is not None and not st.session_state.gaps_df.empty:
-            st.markdown("### Select a Gap to Investigate")
+    #     # Select a gap to investigate
+    #     if st.session_state.gaps_df is not None and not st.session_state.gaps_df.empty:
+    #         st.markdown("### Select a Gap to Investigate")
 
-            # Let user select a gap
-            gap_options = []
-            for idx, gap in st.session_state.gaps_df.iterrows():
-                gap_label = f"{gap['gap_start'].strftime('%Y-%m-%d')} to {gap['gap_end'].strftime('%Y-%m-%d')} ({gap['gap_days']} days)"
-                gap_options.append((idx, gap_label))
+    #         # Let user select a gap
+    #         gap_options = []
+    #         for idx, gap in st.session_state.gaps_df.iterrows():
+    #             gap_label = f"{gap['gap_start'].strftime('%Y-%m-%d')} to {gap['gap_end'].strftime('%Y-%m-%d')} ({gap['gap_days']} days)"
+    #             gap_options.append((idx, gap_label))
 
-            if gap_options:
-                selected_idx = st.selectbox(
-                    "Choose a gap to investigate",
-                    options=[opt[0] for opt in gap_options],
-                    format_func=lambda x: dict(gap_options)[x],
-                )
+    #         if gap_options:
+    #             selected_idx = st.selectbox(
+    #                 "Choose a gap to investigate",
+    #                 options=[opt[0] for opt in gap_options],
+    #                 format_func=lambda x: dict(gap_options)[x],
+    #             )
 
-                if selected_idx is not None:
-                    selected_gap = st.session_state.gaps_df.loc[selected_idx]
+    #             if selected_idx is not None:
+    #                 selected_gap = st.session_state.gaps_df.loc[selected_idx]
 
-                    # Initialize analyzers
-                    external_analyzer = ExternalFactorsAnalyzer()
-                    opportunity_finder = OpportunityFinder()
+    #                 # Initialize analyzers
+    #                 external_analyzer = ExternalFactorsAnalyzer()
+    #                 opportunity_finder = OpportunityFinder()
 
-                    # Analyze the gap
-                    with st.spinner("Analyzing external factors..."):
-                        # Get gap analysis
-                        gap_analysis = external_analyzer.analyze_gap_causes(
-                            df, selected_gap["gap_start"], selected_gap["gap_end"]
-                        )
+    #                 # Analyze the gap
+    #                 with st.spinner("Analyzing external factors..."):
+    #                     # Get gap analysis
+    #                     gap_analysis = external_analyzer.analyze_gap_causes(
+    #                         df, selected_gap["gap_start"], selected_gap["gap_end"]
+    #                     )
 
-                        # Identify opportunities
-                        opportunities = external_analyzer.identify_opportunities(
-                            gap_analysis, df
-                        )
+    #                     # Identify opportunities
+    #                     opportunities = external_analyzer.identify_opportunities(
+    #                         gap_analysis, df
+    #                     )
 
-                        # Prioritize opportunities
-                        prioritized = opportunity_finder.prioritize_opportunities(
-                            opportunities
-                        )
+    #                     # Prioritize opportunities
+    #                     prioritized = opportunity_finder.prioritize_opportunities(
+    #                         opportunities
+    #                     )
 
-                    # Display results
-                    st.markdown("### 📊 Gap Analysis Results")
+    #                 # Display results
+    #                 st.markdown("### 📊 Gap Analysis Results")
 
-                    # Gap details
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Gap Duration", f"{selected_gap['gap_days']} days")
-                    with col2:
-                        st.metric("Month", selected_gap["month"])
-                    with col3:
-                        st.metric("Year", selected_gap["year"])
+    #                 # Gap details
+    #                 col1, col2, col3 = st.columns(3)
+    #                 with col1:
+    #                     st.metric("Gap Duration", f"{selected_gap['gap_days']} days")
+    #                 with col2:
+    #                     st.metric("Month", selected_gap["month"])
+    #                 with col3:
+    #                     st.metric("Year", selected_gap["year"])
 
-                    # External Factors
-                    st.markdown("### 🌍 External Factors Contributing to the Gap")
+    #                 # External Factors
+    #                 st.markdown("### 🌍 External Factors Contributing to the Gap")
 
-                    for factor in gap_analysis["external_factors"]:
-                        with st.expander(
-                            f"**{factor['type']}** - Impact: {factor['impact'].upper()}"
-                        ):
-                            st.write(factor["description"])
-                            if isinstance(factor["details"], dict):
-                                st.json(factor["details"])
-                            elif isinstance(factor["details"], list):
-                                for item in factor["details"]:
-                                    if isinstance(item, dict):
-                                        st.write(f"- {item}")
-                                    else:
-                                        st.write(f"- {item}")
-                            else:
-                                st.write(factor["details"])
+    #                 for factor in gap_analysis["external_factors"]:
+    #                     with st.expander(
+    #                         f"**{factor['type']}** - Impact: {factor['impact'].upper()}"
+    #                     ):
+    #                         st.write(factor["description"])
+    #                         if isinstance(factor["details"], dict):
+    #                             st.json(factor["details"])
+    #                         elif isinstance(factor["details"], list):
+    #                             for item in factor["details"]:
+    #                                 if isinstance(item, dict):
+    #                                     st.write(f"- {item}")
+    #                                 else:
+    #                                     st.write(f"- {item}")
+    #                         else:
+    #                             st.write(factor["details"])
 
-                    # Opportunities
-                    st.markdown("### 💡 Identified Opportunities")
+    #                 # Opportunities
+    #                 st.markdown("### 💡 Identified Opportunities")
 
-                    if prioritized:
-                        # Summary metrics
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            high_priority = len(
-                                [
-                                    o
-                                    for o in prioritized
-                                    if o["priority_level"] == "High"
-                                ]
-                            )
-                            st.metric("High Priority Opportunities", high_priority)
-                        with col2:
-                            medium_priority = len(
-                                [
-                                    o
-                                    for o in prioritized
-                                    if o["priority_level"] == "Medium"
-                                ]
-                            )
-                            st.metric("Medium Priority Opportunities", medium_priority)
-                        with col3:
-                            low_priority = len(
-                                [o for o in prioritized if o["priority_level"] == "Low"]
-                            )
-                            st.metric("Low Priority Opportunities", low_priority)
+    #                 if prioritized:
+    #                     # Summary metrics
+    #                     col1, col2, col3 = st.columns(3)
+    #                     with col1:
+    #                         high_priority = len(
+    #                             [
+    #                                 o
+    #                                 for o in prioritized
+    #                                 if o["priority_level"] == "High"
+    #                             ]
+    #                         )
+    #                         st.metric("High Priority Opportunities", high_priority)
+    #                     with col2:
+    #                         medium_priority = len(
+    #                             [
+    #                                 o
+    #                                 for o in prioritized
+    #                                 if o["priority_level"] == "Medium"
+    #                             ]
+    #                         )
+    #                         st.metric("Medium Priority Opportunities", medium_priority)
+    #                     with col3:
+    #                         low_priority = len(
+    #                             [o for o in prioritized if o["priority_level"] == "Low"]
+    #                         )
+    #                         st.metric("Low Priority Opportunities", low_priority)
 
-                        # Display opportunities
-                        for idx, opp in enumerate(prioritized):
-                            with st.expander(
-                                f"{idx+1}. {opp['type']} - Priority: {opp['priority_level']} (Score: {opp['priority_score']}/10)"
-                            ):
-                                st.write(f"**Description**: {opp['description']}")
-                                st.write(
-                                    f"**Target Audience**: {opp['target_audience']}"
-                                )
-                                st.write(
-                                    f"**Potential Venues**: {opp['potential_venues']}"
-                                )
-                                st.write(f"**Suggestion**: {opp['suggestion']}")
+    #                     # Display opportunities
+    #                     for idx, opp in enumerate(prioritized):
+    #                         with st.expander(
+    #                             f"{idx+1}. {opp['type']} - Priority: {opp['priority_level']} (Score: {opp['priority_score']}/10)"
+    #                         ):
+    #                             st.write(f"**Description**: {opp['description']}")
+    #                             st.write(
+    #                                 f"**Target Audience**: {opp['target_audience']}"
+    #                             )
+    #                             st.write(
+    #                                 f"**Potential Venues**: {opp['potential_venues']}"
+    #                             )
+    #                             st.write(f"**Suggestion**: {opp['suggestion']}")
 
-                        # Export opportunities
-                        opp_df = pd.DataFrame(prioritized)
-                        csv_opp = opp_df.to_csv(index=False).encode("utf-8")
-                        st.download_button(
-                            label="📥 Download Opportunities (CSV)",
-                            data=csv_opp,
-                            file_name=f"opportunities_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                            mime="text/csv",
-                        )
-                    else:
-                        st.info("No specific opportunities identified for this gap.")
+    #                     # Export opportunities
+    #                     opp_df = pd.DataFrame(prioritized)
+    #                     csv_opp = opp_df.to_csv(index=False).encode("utf-8")
+    #                     st.download_button(
+    #                         label="📥 Download Opportunities (CSV)",
+    #                         data=csv_opp,
+    #                         file_name=f"opportunities_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+    #                         mime="text/csv",
+    #                     )
+    #                 else:
+    #                     st.info("No specific opportunities identified for this gap.")
 
-                    # Recommendations
-                    st.markdown("### 🎯 Recommendations")
+    #                 # Recommendations
+    #                 st.markdown("### 🎯 Recommendations")
 
-                    recs = [
-                        "Consider reaching out to local venues to fill the gap",
-                        "Look for promoters who might be available during this period",
-                        "Check if there are any community events that could be organized",
-                        "Consider virtual events as an alternative",
-                        "Partner with local businesses for event sponsorship",
-                    ]
+    #                 recs = [
+    #                     "Consider reaching out to local venues to fill the gap",
+    #                     "Look for promoters who might be available during this period",
+    #                     "Check if there are any community events that could be organized",
+    #                     "Consider virtual events as an alternative",
+    #                     "Partner with local businesses for event sponsorship",
+    #                 ]
 
-                    # Add specific recommendations based on gap type
-                    if selected_gap["gap_days"] >= 7:
-                        recs.append(
-                            "📅 **Weekly Event Series**: Consider establishing a weekly event series to prevent recurring gaps"
-                        )
+    #                 # Add specific recommendations based on gap type
+    #                 if selected_gap["gap_days"] >= 7:
+    #                     recs.append(
+    #                         "📅 **Weekly Event Series**: Consider establishing a weekly event series to prevent recurring gaps"
+    #                     )
 
-                    if selected_gap["month"] in ["1", "2"]:
-                        recs.append(
-                            "❄️ **Winter Events**: January/February gaps can be filled with indoor concerts, comedy nights, or theater productions"
-                        )
+    #                 if selected_gap["month"] in ["1", "2"]:
+    #                     recs.append(
+    #                         "❄️ **Winter Events**: January/February gaps can be filled with indoor concerts, comedy nights, or theater productions"
+    #                     )
 
-                    if selected_gap["month"] in ["7", "8"]:
-                        recs.append(
-                            "🏖️ **Summer Events**: These months are ideal for outdoor events - consider pop-up concerts or mini-festivals"
-                        )
+    #                 if selected_gap["month"] in ["7", "8"]:
+    #                     recs.append(
+    #                         "🏖️ **Summer Events**: These months are ideal for outdoor events - consider pop-up concerts or mini-festivals"
+    #                     )
 
-                    for rec in recs:
-                        st.write(f"- {rec}")
+    #                 for rec in recs:
+    #                     st.write(f"- {rec}")
 
-                    # Additional research suggestions
-                    st.markdown("### 🔬 Suggested Further Research")
-                    st.info("""
-                    **To understand these gaps better:**
-                    1. Check local venue availability during these periods
-                    2. Contact event promoters about their scheduling challenges
-                    3. Survey potential attendees about what events they would attend
-                    4. Research other cities' event schedules for comparison
-                    5. Look at transportation/travel patterns during these periods
-                    """)
+    #                 # Additional research suggestions
+    #                 st.markdown("### 🔬 Suggested Further Research")
+    #                 st.info("""
+    #                 **To understand these gaps better:**
+    #                 1. Check local venue availability during these periods
+    #                 2. Contact event promoters about their scheduling challenges
+    #                 3. Survey potential attendees about what events they would attend
+    #                 4. Research other cities' event schedules for comparison
+    #                 5. Look at transportation/travel patterns during these periods
+    #                 """)
 
-        else:
-            st.info(
-                "No gaps found to investigate. Try adjusting the gap threshold or date range."
-            )
+    #     else:
+    #         st.info(
+    #             "No gaps found to investigate. Try adjusting the gap threshold or date range."
+    #         )
 
-    with tab7:  # After your existing tabs
+    with tab6:  # After your existing tabs
         st.subheader("🎪 Festival Opportunity Finder")
         st.markdown("*Identify where and when a new mid-sized festival could succeed*")
 
