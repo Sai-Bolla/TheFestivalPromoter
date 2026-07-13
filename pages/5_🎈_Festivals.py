@@ -59,35 +59,35 @@ with st.sidebar:
     st.markdown("---")
     st.header("Data Collection")
 
-    # Check API keys - FIXED logic
-    if SKIDDLE_API_KEY and SKIDDLE_API_KEY not in [
-        "SKIDDLE_API_KEY",
-        "your_skiddle_api_key_here",
-        "",
-        None,
-    ]:
-        st.success("✅ Skiddle API Key: Configured")
-    else:
-        st.error("❌ Skiddle API Key: Missing or invalid")
+    # # Check API keys - FIXED logic
+    # if SKIDDLE_API_KEY and SKIDDLE_API_KEY not in [
+    #     "SKIDDLE_API_KEY",
+    #     "your_skiddle_api_key_here",
+    #     "",
+    #     None,
+    # ]:
+    #     st.success("✅ Skiddle API Key: Configured")
+    # else:
+    #     st.error("❌ Skiddle API Key: Missing or invalid")
 
-    if TICKET_API_KEY and TICKET_API_KEY not in [
-        "TICKET_API_KEY",
-        "your_ticketmaster_api_key_here",
-        "",
-        None,
-    ]:
-        st.success("✅ Ticketmaster API Key: Configured")
-    else:
-        st.error("❌ Ticketmaster API Key: Missing or invalid")
+    # if TICKET_API_KEY and TICKET_API_KEY not in [
+    #     "TICKET_API_KEY",
+    #     "your_ticketmaster_api_key_here",
+    #     "",
+    #     None,
+    # ]:
+    #     st.success("✅ Ticketmaster API Key: Configured")
+    # else:
+    #     st.error("❌ Ticketmaster API Key: Missing or invalid")
 
-    # Debug info
-    if not SKIDDLE_API_KEY or SKIDDLE_API_KEY in [
-        "SKIDDLE_API_KEY",
-        "your_skiddle_api_key_here",
-        "",
-        None,
-    ]:
-        st.warning("⚠️ Skiddle key not found. Check your .env file")
+    # # Debug info
+    # if not SKIDDLE_API_KEY or SKIDDLE_API_KEY in [
+    #     "SKIDDLE_API_KEY",
+    #     "your_skiddle_api_key_here",
+    #     "",
+    #     None,
+    # ]:
+    #     st.warning("⚠️ Skiddle key not found. Check your .env file")
 
     default_event_type = "LIVE"
 
@@ -339,13 +339,13 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
     )
 
     # Tabs for different views
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
         [
             "🗺️ Map View",
             "📊 Analysis",
             "📈 Density",
             "📋 Data Preview",
-            "ℹ️ Quality Report",
+            # "ℹ️ Quality Report",
             "📆 Event Gap Analysis",
             "🔍 Gap Investigation & Opportunity Finder",
             "🎪 Festival Opportunity",
@@ -574,57 +574,57 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
                     width="stretch",
                 )
 
+    # with tab5:
+    #     st.subheader("ℹ️ Data Quality Report")
+
+    #     if "quality_score" in df.columns:
+    #         col1, col2 = st.columns(2)
+
+    #         with col1:
+    #             # Quality distribution
+    #             quality_dist = df["quality_score"].value_counts().sort_index()
+    #             fig = px.bar(
+    #                 x=quality_dist.index,
+    #                 y=quality_dist.values,
+    #                 title="Quality Score Distribution",
+    #                 labels={"x": "Quality Score", "y": "Number of Events"},
+    #                 color=quality_dist.values,
+    #                 color_continuous_scale="Viridis",
+    #             )
+    #             fig.update_layout(showlegend=False)
+    #             st.plotly_chart(fig, width="stretch")
+
+    #         with col2:
+    #             # Quality by source
+    #             quality_by_source = (
+    #                 df.groupby("source")["quality_score"].mean().reset_index()
+    #             )
+    #             fig = px.bar(
+    #                 quality_by_source,
+    #                 x="source",
+    #                 y="quality_score",
+    #                 title="Average Quality Score by Source",
+    #                 color="quality_score",
+    #                 color_continuous_scale="Viridis",
+    #             )
+    #             fig.update_layout(showlegend=False)
+    #             st.plotly_chart(fig, width="stretch")
+
+    #         # Quality breakdown
+    #         st.subheader("Quality Breakdown by Category")
+    #         quality_breakdown = (
+    #             df.groupby("event_category")["quality_score"]
+    #             .agg(["mean", "count"])
+    #             .reset_index()
+    #         )
+    #         quality_breakdown.columns = ["Category", "Avg Quality", "Count"]
+    #         st.dataframe(
+    #             quality_breakdown.sort_values("Avg Quality", ascending=False),
+    #             width="stretch",
+    #             hide_index=True,
+    #         )
+
     with tab5:
-        st.subheader("ℹ️ Data Quality Report")
-
-        if "quality_score" in df.columns:
-            col1, col2 = st.columns(2)
-
-            with col1:
-                # Quality distribution
-                quality_dist = df["quality_score"].value_counts().sort_index()
-                fig = px.bar(
-                    x=quality_dist.index,
-                    y=quality_dist.values,
-                    title="Quality Score Distribution",
-                    labels={"x": "Quality Score", "y": "Number of Events"},
-                    color=quality_dist.values,
-                    color_continuous_scale="Viridis",
-                )
-                fig.update_layout(showlegend=False)
-                st.plotly_chart(fig, width="stretch")
-
-            with col2:
-                # Quality by source
-                quality_by_source = (
-                    df.groupby("source")["quality_score"].mean().reset_index()
-                )
-                fig = px.bar(
-                    quality_by_source,
-                    x="source",
-                    y="quality_score",
-                    title="Average Quality Score by Source",
-                    color="quality_score",
-                    color_continuous_scale="Viridis",
-                )
-                fig.update_layout(showlegend=False)
-                st.plotly_chart(fig, width="stretch")
-
-            # Quality breakdown
-            st.subheader("Quality Breakdown by Category")
-            quality_breakdown = (
-                df.groupby("event_category")["quality_score"]
-                .agg(["mean", "count"])
-                .reset_index()
-            )
-            quality_breakdown.columns = ["Category", "Avg Quality", "Count"]
-            st.dataframe(
-                quality_breakdown.sort_values("Avg Quality", ascending=False),
-                width="stretch",
-                hide_index=True,
-            )
-
-    with tab6:
         st.subheader("📆 Event Gap Analysis")
         st.markdown("*Find periods with no events and analyse potential causes*")
 
@@ -842,7 +842,7 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
                         mime="text/csv",
                     )
 
-    with tab7:  # New tab for gap investigation
+    with tab6:  # New tab for gap investigation
         st.subheader("🔍 Gap Investigation & Opportunity Finder")
         st.markdown("*Analyze why gaps occur and identify opportunities to fill them*")
 
@@ -1023,7 +1023,7 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
                 "No gaps found to investigate. Try adjusting the gap threshold or date range."
             )
 
-    with tab8:  # After your existing tabs
+    with tab7:  # After your existing tabs
         st.subheader("🎪 Festival Opportunity Finder")
         st.markdown("*Identify where and when a new mid-sized festival could succeed*")
 
