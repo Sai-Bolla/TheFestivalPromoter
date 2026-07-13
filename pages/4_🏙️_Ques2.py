@@ -6,6 +6,7 @@ from datetime import datetime
 from collect_data import DataCollector, DataCleaner, run_data_pipeline
 from data_cleaner import AdvancedDataCleaner
 from gap_analyser import EventGapAnalyser, analyse_events_gap
+from festival_opportunity import FestivalOpportunityAnalyzer
 from external_factors import ExternalFactorsAnalyzer, OpportunityFinder
 import os
 from dotenv import load_dotenv  # ADD THIS
@@ -43,9 +44,9 @@ if "events_df" not in st.session_state:
     st.session_state.events_df = None
 if "quality_df" not in st.session_state:
     st.session_state.quality_df = None
-if "gaps_df" not in st.session_state:  
+if "gaps_df" not in st.session_state:
     st.session_state.gaps_df = None
-if "gap_analysis_results" not in st.session_state:  
+if "gap_analysis_results" not in st.session_state:
     st.session_state.gap_analysis_results = None
 
 # Title
@@ -272,6 +273,7 @@ def fetch_and_clean_data():
             import traceback
 
             st.error(traceback.format_exc())
+
             return None
 
 
@@ -337,7 +339,7 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
     )
 
     # Tabs for different views
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
         [
             "🗺️ Map View",
             "📊 Analysis",
@@ -346,6 +348,7 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
             "ℹ️ Quality Report",
             "📆 Event Gap Analysis",
             "🔍 Gap Investigation & Opportunity Finder",
+            "🎪 Festival Opportunity",
         ]
     )
 
@@ -1018,6 +1021,181 @@ if st.session_state.events_df is not None and not st.session_state.events_df.emp
         else:
             st.info(
                 "No gaps found to investigate. Try adjusting the gap threshold or date range."
+            )
+
+    with tab8:  # After your existing tabs
+        st.subheader("🎪 Festival Opportunity Finder")
+        st.markdown("*Identify where and when a new mid-sized festival could succeed*")
+
+        if (
+            st.session_state.events_df is not None
+            and not st.session_state.events_df.empty
+        ):
+            df = st.session_state.events_df
+
+            # Initialize analyzer
+            with st.spinner("Analyzing festival opportunities..."):
+                # Make sure we have regions data
+                if regions_df is not None and not regions_df.empty:
+                    analyzer = FestivalOpportunityAnalyzer(df, regions_df)
+
+                    # Get opportunities
+                    opportunities = analyzer.identify_festival_opportunities()
+
+                    # Display recommendations
+                    st.markdown("### ⭐ Top Festival Recommendations")
+
+                    # Show top 3 recommendations as cards
+                    recs = opportunities.get("recommendations", [])
+                    if recs:
+                        for rec in recs[:3]:
+                            with st.container():
+                                col1, col2 = st.columns([3, 1])
+                                with col1:
+                                    st.markdown(
+                                        f"**{rec['priority']}. {rec['title']}**"
+                                    )
+                                    st.markdown(f"_{rec['description'].strip()}_")
+                                with col2:
+                                    if rec["rating"] == "High":
+                                        st.success(f"⭐ {rec['rating']}")
+                                    elif rec["rating"] == "Medium":
+                                        st.warning(f"⭐ {rec['rating']}")
+                                    else:
+                                        st.info(f"⭐ {rec['rating']}")
+                                    st.metric("Score", f"{rec['score']:.0f}/100")
+                                st.divider()
+
+                    # 2. Region opportunity map
+                    st.markdown("### 🗺️ Region Opportunity Map")
+                    plots = analyzer.create_visualizations()
+                    if "opportunity_map" in plots:
+                        st.plotly_chart(plots["opportunity_map"], width="stretch")
+
+                    # 3. Density analysis
+                    st.markdown("### 📊 Event Density by Region")
+
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        # Show density chart
+                        if "density_chart" in plots:
+                            st.plotly_chart(plots["density_chart"], width="stretch")
+
+                    with col2:
+                        # Show opportunity regions table
+                        region_opp = opportunities.get(
+                            "region_opportunities", pd.DataFrame()
+                        )
+                        if not region_opp.empty:
+                            st.dataframe(
+                                region_opp[
+                                    [
+                                        "region",
+                                        "event_count",
+                                        "population",
+                                        "events_per_100k",
+                                        "opportunity_rating",
+                                    ]
+                                ],
+                                width="stretch",
+                                hide_index=True,
+                                column_config={
+                                    "region": "Region",
+                                    "event_count": "Events",
+                                    "population": "Population",
+                                    "events_per_100k": "Events per 100k",
+                                    "opportunity_rating": "Opportunity",
+                                },
+                            )
+
+                    # 4. Calendar gap analysis
+                    st.markdown("### 📅 Calendar Gap Analysis")
+
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        calendar = opportunities.get("calendar_gaps", {})
+                        if calendar.get("best_gap_for_festival"):
+                            gap = calendar["best_gap_for_festival"]
+                            st.info(f"""
+                            **Ideal Festival Window**
+                            - Dates: {gap['start'].strftime('%Y-%m-%d')} to {gap['end'].strftime('%Y-%m-%d')}
+                            - Duration: {gap['duration_days']} days
+                            - Season: {gap['season']}
+                            - Month: {gap['month']}
+                            """)
+
+                        # Show month gaps
+                        if calendar.get("months_with_most_gaps"):
+                            st.write("**Months with Most Gaps:**")
+                            for month, count in list(
+                                calendar["months_with_most_gaps"].items()
+                            )[:5]:
+                                st.write(f"- {month}: {count} gaps")
+
+                    with col2:
+                        # Show gap timeline
+                        if "gap_timeline" in plots:
+                            st.plotly_chart(plots["gap_timeline"], width="stretch")
+
+                    # 5. Genre analysis
+                    st.markdown("### 🎵 Genre Gap Analysis")
+
+                    genre_data = opportunities.get("genre_opportunities", {})
+                    if genre_data:
+                        # Create genre gap summary
+                        genre_summary = []
+                        for region, data in genre_data.items():
+                            if data and data.get("underserved_genres"):
+                                for g in data["underserved_genres"][:3]:
+                                    genre_summary.append(
+                                        {
+                                            "Region": region,
+                                            "Genre": g["genre"],
+                                            "Events": g["count"],
+                                            "Percentage": f"{g['percentage']:.1f}%",
+                                            "Potential": (
+                                                "High"
+                                                if g["percentage"] < 5
+                                                else "Medium"
+                                            ),
+                                        }
+                                    )
+
+                        if genre_summary:
+                            genre_df = pd.DataFrame(genre_summary)
+                            st.dataframe(
+                                genre_df,
+                                width="stretch",
+                                hide_index=True,
+                                column_config={
+                                    "Region": "Region",
+                                    "Genre": "Genre",
+                                    "Events": "Events",
+                                    "Percentage": "% of Events",
+                                    "Potential": "Potential",
+                                },
+                            )
+
+                    # 6. Download report
+                    st.markdown("### 📋 Festival Opportunity Report")
+
+                    if st.button("Generate Full Report"):
+                        report = analyzer.generate_festival_report()
+                        st.text_area("Festival Opportunity Report", report, height=400)
+
+                        # Download button
+                        st.download_button(
+                            label="📥 Download Report",
+                            data=report,
+                            file_name=f"festival_opportunity_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+                            mime="text/plain",
+                        )
+
+        else:
+            st.info(
+                "👈 Please load or fetch data first to analyze festival opportunities."
             )
 
 

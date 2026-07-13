@@ -283,6 +283,7 @@ class EventGapAnalyser:
             )
             fig3.show()
 
+    
 
 def analyse_events_gap(df: pd.DataFrame, gap_threshold_days: int = 3) -> Dict:
     """Function to analysis events gap"""
