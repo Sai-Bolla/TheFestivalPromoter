@@ -5,14 +5,14 @@ from pprint import pprint # Pretty Print
 import time               # measuring the length of time between different items being run
 
 import pandas as pd
+import ast
 
+import os
+from dotenv import load_dotenv
+load_dotenv()
+SKIDDLE_API_KEY = os.getenv('SKIDDLE_API_KEY')
+TM_API_KEY = os.getenv('TICKETMASTER_API_KEY')
 
-print('hello')
-# creating the webpage
-st.title('The Festival promoter')
-
-
-st.header('Welcome to our project')
 
 '''
  country code: GB
@@ -110,7 +110,7 @@ print(f"Final count after removing duplicates: {len(df)}")
 st.dataframe(df)
 '''
 
-def get_all_uk_festivals(api_key):
+def skiddle_festivals(api_key):
     url = "https://www.skiddle.com/api/v1/events/search/"
     all_events = []
     limit = 100  # Request max allowed per call
@@ -146,15 +146,86 @@ def get_all_uk_festivals(api_key):
         
     return pd.DataFrame(all_events)
 
-# Usage
-API_KEY = '0bab9d30862cafd032232f184bcdb55e'
-df_festivals = get_all_uk_festivals(API_KEY)
+# retrieving the data
+API_KEY = SKIDDLE_API_KEY
+skiddle = skiddle_festivals(API_KEY)
 
-# Display the first few rows
-if not df_festivals.empty:
-    print(df_festivals.head())
+# Grouping columns by logic helps understand why they are being removed
+index_based_drops = skiddle.columns[:7].tolist()
 
-st.write()
-st.dataframe(df_festivals)
+cancellation_cols = [
+    'cancellationDate', 'cancellationType', 'cancellationReason'
+]
+media_cols = [
+    'imageurl', 'largeimageurl', 'xlargeimageurl', 'xlargeimageurlWebP'
+]
+metadata_cols = [
+    'link', 'openingtimes', 'minage', 'imgoing', 'goingtos', 'goingtocount',
+    'tickets', 'ticketpricing', 'entryprice', 'eventvisibility', 'ticketUrl',
+    'hotSeller', 'rep', 'headerHex', 'currency', 'artists', 'genres',
+    'healthAndSafety', 'festivalId'
+]
+
+columns_to_remove = index_based_drops + cancellation_cols + media_cols + metadata_cols
+
+# Perform the drop
+skiddle.drop(columns=columns_to_remove, inplace=True, errors='ignore')
+
+# AI used: extract the relevant data from venue into its own columns
+def extract_venue_fields(row_data):
+    # If it's already a dictionary (which is expected from the JSON response)
+    if isinstance(row_data, dict):
+        data = row_data
+    # If it somehow got converted to a string, parse it
+    elif isinstance(row_data, str):
+        try:
+            data = ast.literal_eval(row_data)
+        except (ValueError, SyntaxError):
+            data = {}
+    # Fallback for missing/NaN values
+    else:
+        data = {}
+        
+    return pd.Series({
+        'venue_name': data.get('name'),
+        'postcode':   data.get('postcode'),
+        'longitude':  data.get('longitude'),
+        'latitude':   data.get('latitude')
+    })
+
+venue_details = skiddle['venue'].apply(extract_venue_fields)
+
+# Add the new columns to the main dataframe
+skiddle = pd.concat([skiddle, venue_details], axis=1)
+
+# Remove the original 'venue' column as it is no longer needed
+skiddle.drop(columns=['venue'], inplace=True)
+
+#convert the date columns to datetime
+skiddle['date'] = pd.to_datetime(skiddle['date'])
+skiddle['rescheduledDate'] = pd.to_datetime(skiddle['rescheduledDate'])
+
+#drop rows where cancelled = 1 and there is no data in the rescheduledDate
+skiddle.drop(skiddle[(skiddle['cancelled'] == 1) & (skiddle['rescheduledDate'].isna())].index, inplace=True)
+skiddle.drop(columns=['cancelled'], inplace=True)
+
+skiddle['startdate'] = pd.to_datetime(skiddle['startdate'])
+skiddle['enddate'] = pd.to_datetime(skiddle['enddate'])
+
+#replace the date with the rescheduled date, if there is a rescheduled date
+skiddle['date'] = skiddle['rescheduledDate'].fillna(skiddle['date'])
+skiddle.drop(columns=['rescheduledDate'], inplace=True) 
+
+
+#drop the description column, longitude and latitude columns and the festival column
+skiddle.drop(columns=['description', 'festival','longitude','latitude'], inplace=True)
+
+#save to csv
+skiddle.to_csv('cleaned_skiddle_data15.csv', index=False)
+
+print(skiddle.columns.tolist())
+print(skiddle.head())
+print(skiddle.info())
+print(skiddle.dtypes)
 
 
